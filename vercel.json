@@ -1,0 +1,26 @@
+{
+  "buildCommand": "node scripts/build-frontend.js",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/register.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin-dashboard.html"
+    },
+    {
+      "source": "/donor",
+      "destination": "/donor-dashboard.html"
+    },
+    {
+      "source": "/hospital",
+      "destination": "/hospital-dashboard.html"
+    }
+  ]
+}
