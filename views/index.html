@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Blood Bank</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="drop"></div>
+    BloodBank
+  </div>
+  <div class="navbar-nav">
+    <a href="/login"    class="btn btn-outline btn-sm">Log In</a>
+    <a href="/register" class="btn btn-primary btn-sm">Register</a>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-content fade-in">
+    <h1>Save Lives with<br/><span class="accent">Smart Blood Banking</span></h1>
+    <p>
+      A complete management platform for donors, hospitals, and admins.
+      Real-time stock tracking, emergency requests, and seamless coordination.
+    </p>
+    <div class="hero-btns">
+      <a href="/register" class="btn btn-primary btn-lg">Become a Donor</a>
+      <a href="/login"    class="btn btn-outline btn-lg">Hospital Login</a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num">8+</div>
+        <div class="lbl">Blood Groups</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">24/7</div>
+        <div class="lbl">Emergency Support</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">100%</div>
+        <div class="lbl">Secure & Verified</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ────────────────────────────────────────── -->
+<section style="padding: 64px 0; background: var(--bg2); border-top: 1px solid var(--border);">
+  <div class="container">
+    <h2 style="text-align:center; font-size:1.8rem; margin-bottom:40px;">Everything You Need</h2>
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap:20px;">
+
+      <div class="card fade-in" style="animation-delay:0.1s">
+        <div style="font-size:2rem; margin-bottom:12px;">🩸</div>
+        <h3 style="margin-bottom:8px; font-size:1rem;">Blood Inventory</h3>
+        <p style="color:var(--text-muted); font-size:0.875rem;">Real-time tracking of all 8 blood group stocks with low-stock alerts.</p>
+      </div>
+
+      <div class="card fade-in" style="animation-delay:0.15s">
+        <div style="font-size:2rem; margin-bottom:12px;">🚨</div>
+        <h3 style="margin-bottom:8px; font-size:1rem;">Emergency Requests</h3>
+        <p style="color:var(--text-muted); font-size:0.875rem;">Hospitals can raise urgent requests; admins approve and deduct stock instantly.</p>
+      </div>
+
+      <div class="card fade-in" style="animation-delay:0.2s">
+        <div style="font-size:2rem; margin-bottom:12px;">👤</div>
+        <h3 style="margin-bottom:8px; font-size:1rem;">Donor Management</h3>
+        <p style="color:var(--text-muted); font-size:0.875rem;">Search donors by blood group and location. Full donation history tracking.</p>
+      </div>
+
+      <div class="card fade-in" style="animation-delay:0.25s">
+        <div style="font-size:2rem; margin-bottom:12px;">📊</div>
+        <h3 style="margin-bottom:8px; font-size:1rem;">Admin Dashboard</h3>
+        <p style="color:var(--text-muted); font-size:0.875rem;">Complete overview — stock levels, pending requests, user statistics.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center; padding:28px; border-top:1px solid var(--border); color:var(--text-muted); font-size:0.825rem;">
+  Smart Blood Bank &amp; Donor Management System — Final Year Project
+</footer>
+
+<script>
+  // If already logged in, redirect to dashboard
+  if (localStorage.getItem('bb_token')) {
+    const user = JSON.parse(localStorage.getItem('bb_user') || '{}');
+    const routes = { admin: '/admin', donor: '/donor', hospital: '/hospital' };
+    if (user.role && routes[user.role]) window.location.href = routes[user.role];
+  }
+</script>
+
+</body>
+</html>

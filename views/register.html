@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register — BloodBank</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card fade-in" style="max-width:480px;">
+
+    <div class="auth-logo">
+      <div class="drop-big"></div>
+      <h2>Create Account</h2>
+      <p>Join the Smart Blood Bank network</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input id="name" type="text" class="form-control" placeholder="John Doe"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select id="role" class="form-control" onchange="toggleDonorFields()">
+          <option value="donor">Donor</option>
+          <option value="hospital">Hospital</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input id="email" type="email" class="form-control" placeholder="you@example.com"/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input id="password" type="password" class="form-control" placeholder="Min 6 characters"/>
+    </div>
+
+    <!-- Donor-only fields -->
+    <div id="donorFields">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Blood Group</label>
+          <select id="bloodGroup" class="form-control">
+            <option value="">Select...</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location / City</label>
+          <input id="location" type="text" class="form-control" placeholder="Hyderabad"/>
+        </div>
+      </div>
+    </div>
+
+    <button id="registerBtn" class="btn btn-primary btn-block btn-lg" data-label="Create Account">
+      Create Account
+    </button>
+
+    <p class="text-center mt-md" style="color:var(--text-muted); font-size:0.875rem;">
+      Already have an account? <a href="/login">Log in here</a>
+    </p>
+
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  if (Auth.isLoggedIn()) Auth.redirectByRole();
+
+  function toggleDonorFields() {
+    const role = document.getElementById('role').value;
+    document.getElementById('donorFields').style.display = role === 'donor' ? '' : 'none';
+  }
+  toggleDonorFields(); // init
+
+  document.getElementById('registerBtn').addEventListener('click', async () => {
+    const name      = document.getElementById('name').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const password  = document.getElementById('password').value;
+    const role      = document.getElementById('role').value;
+    const bloodGroup= document.getElementById('bloodGroup').value;
+    const location  = document.getElementById('location').value.trim();
+
+    if (!name || !email || !password) {
+      return showAlert('alert', 'Name, email, and password are required.', 'error');
+    }
+    if (password.length < 6) {
+      return showAlert('alert', 'Password must be at least 6 characters.', 'error');
+    }
+    if (role === 'donor' && (!bloodGroup || !location)) {
+      return showAlert('alert', 'Blood group and location are required for donors.', 'error');
+    }
+
+    setLoading('registerBtn', true);
+    const res = await api.post('/auth/register', { name, email, password, role, bloodGroup, location });
+    setLoading('registerBtn', false);
+
+    if (!res) return;
+    if (!res.ok) {
+      return showAlert('alert', res.data.message || 'Registration failed.', 'error');
+    }
+
+    showAlert('alert', 'Account created! Redirecting to login...', 'success');
+    setTimeout(() => window.location.href = '/login', 1200);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — BloodBank</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card fade-in">
+
+    <div class="auth-logo">
+      <div class="drop-big"></div>
+      <h2>Welcome Back</h2>
+      <p>Log in to your blood bank account</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input id="email" type="email" class="form-control" placeholder="you@example.com" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input id="password" type="password" class="form-control" placeholder="••••••••" />
+    </div>
+
+    <button id="loginBtn" class="btn btn-primary btn-block btn-lg mt-md" data-label="Log In">
+      Log In
+    </button>
+
+    <p class="text-center mt-md" style="color:var(--text-muted); font-size:0.875rem;">
+      Don't have an account?
+      <a href="/register">Register here</a>
+    </p>
+
+    <!-- Demo credentials for presentation -->
+    <div style="margin-top:28px; padding:16px; background:var(--bg3); border-radius:var(--radius-sm); border:1px solid var(--border);">
+      <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">
+        Demo Credentials
+      </p>
+      <div style="display:flex; flex-direction:column; gap:6px; font-size:0.8rem;">
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Admin</span>
+          <span style="color:var(--text);">admin@bloodbank.com / Admin@123</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Hospital</span>
+          <span style="color:var(--text);">hospital@citygeneral.com / Hospital@123</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Donor</span>
+          <span style="color:var(--text);">rahul@example.com / Donor@123</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // Redirect if already logged in
+  if (Auth.isLoggedIn()) Auth.redirectByRole();
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+      showAlert('alert', 'Please enter your email and password.', 'error');
+      return;
+    }
+
+    setLoading('loginBtn', true);
+    const res = await api.post('/auth/login', { email, password });
+    setLoading('loginBtn', false);
+
+    if (!res) return; // handled by auth redirect
+    if (!res.ok) {
+      showAlert('alert', res.data.message || 'Login failed.', 'error');
+      return;
+    }
+
+    Auth.setToken(res.data.token);
+    Auth.setUser(res.data.user);
+    showAlert('alert', 'Login successful! Redirecting...', 'success');
+    setTimeout(() => Auth.redirectByRole(), 800);
+  });
+
+  // Allow Enter key
+  document.getElementById('password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  });
+</script>
+</body>
+</html>

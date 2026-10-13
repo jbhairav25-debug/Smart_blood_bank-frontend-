@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hospital Dashboard — BloodBank</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="drop"></div>
+    BloodBank &nbsp;<span style="color:var(--text-muted); font-weight:400;">Hospital</span>
+  </div>
+  <div id="nav-user"></div>
+</nav>
+
+<div class="dashboard-layout">
+  <aside class="sidebar">
+    <div class="sidebar-label">Hospital Panel</div>
+    <div class="sidebar-section">
+      <div class="sidebar-link active" onclick="showSection('overview')">
+        <span class="icon">📊</span> Overview
+      </div>
+      <div class="sidebar-link" onclick="showSection('request')">
+        <span class="icon">➕</span> New Request
+      </div>
+      <div class="sidebar-link" onclick="showSection('myrequests')">
+        <span class="icon">📋</span> My Requests
+      </div>
+      <div class="sidebar-link" onclick="showSection('stock')">
+        <span class="icon">📦</span> Blood Availability
+      </div>
+      <div class="sidebar-link" onclick="showSection('donors')">
+        <span class="icon">👥</span> Find Donors
+      </div>
+    </div>
+    <div class="sidebar-label">Account</div>
+    <div class="sidebar-section">
+      <div class="sidebar-link" onclick="Auth.logout()">
+        <span class="icon">🚪</span> Logout
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ─── Overview ──────────────────────────────────── -->
+    <div id="sec-overview" class="fade-in">
+      <div class="page-header">
+        <h1>Hospital Dashboard</h1>
+        <p id="hospName" style="color:var(--text-muted)">Loading...</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Total Requests</div>
+          <div class="value blue" id="st-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Pending</div>
+          <div class="value amber" id="st-pending">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Approved</div>
+          <div class="value green" id="st-approved">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🩸 Blood Stock (Real-Time)</div>
+        <div id="stockGrid" class="blood-grid"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ─── New Request ────────────────────────────────── -->
+    <div id="sec-request" class="fade-in hidden">
+      <div class="page-header">
+        <h1>New Blood Request</h1>
+        <p>Submit a request for blood units</p>
+      </div>
+
+      <div id="alert-req" class="alert"></div>
+
+      <div class="card" style="max-width:500px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Blood Group</label>
+            <select id="req-bg" class="form-control">
+              <option value="">Select...</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Units Required</label>
+            <input id="req-units" type="number" min="1" class="form-control" placeholder="e.g. 2"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Urgency Level</label>
+          <select id="req-urgency" class="form-control">
+            <option value="normal">Normal</option>
+            <option value="urgent">Urgent</option>
+            <option value="emergency">Emergency</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes / Reason</label>
+          <input id="req-notes" type="text" class="form-control" placeholder="e.g. Scheduled surgery, accident patient..."/>
+        </div>
+        <button id="reqBtn" class="btn btn-primary btn-lg" data-label="Submit Request" onclick="submitRequest()">
+          🩸 Submit Request
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── My Requests ────────────────────────────────── -->
+    <div id="sec-myrequests" class="fade-in hidden">
+      <div class="page-header">
+        <h1>My Blood Requests</h1>
+        <p>Track the status of all your requests</p>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Blood Group</th><th>Units</th><th>Urgency</th><th>Notes</th><th>Status</th><th>Date</th></tr>
+            </thead>
+            <tbody id="myRequestsTable">
+              <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Blood Availability ────────────────────────── -->
+    <div id="sec-stock" class="fade-in hidden">
+      <div class="page-header">
+        <h1>Blood Availability</h1>
+        <p>Live stock levels across all blood groups</p>
+      </div>
+      <div class="card">
+        <div id="fullStockGrid" class="blood-grid"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ─── Find Donors ────────────────────────────────── -->
+    <div id="sec-donors" class="fade-in hidden">
+      <div class="page-header">
+        <h1>Find Donors</h1>
+        <p>Search registered donors by blood group or location</p>
+      </div>
+
+      <div class="search-bar">
+        <select id="d-bg" class="form-control">
+          <option value="">All Blood Groups</option>
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+        </select>
+        <input id="d-loc" type="text" class="form-control" placeholder="City / Location..." />
+        <button class="btn btn-primary" onclick="searchDonors()">Search</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Blood Group</th><th>Location</th><th>Last Donation</th></tr>
+            </thead>
+            <tbody id="donorSearchTable">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Use search above</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+if (Auth.redirectIfNotLoggedIn()) throw new Error();
+const user = Auth.getUser();
+if (user.role !== 'hospital') Auth.redirectByRole();
+setNavUser();
+
+function showSection(name) {
+  document.querySelectorAll('[id^="sec-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById(`sec-${name}`).classList.remove('hidden');
+  document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  if (name === 'myrequests') loadMyRequests();
+  if (name === 'stock')      loadFullStock();
+}
+
+function renderStockGrid(elId, stock) {
+  const el = document.getElementById(elId);
+  if (!stock || !stock.length) { el.innerHTML = '<p>No data</p>'; return; }
+  el.innerHTML = stock.map(s => {
+    const cls = s.units_available === 0 ? 'critical' : s.units_available < 10 ? 'low' : '';
+    return `<div class="blood-item ${cls}">
+      <div class="bg-type">${s.blood_group}</div>
+      <div class="bg-units"><span>${s.units_available}</span> units</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadDashboard() {
+  const res = await api.get('/dashboard/hospital');
+  if (!res || !res.ok) return;
+
+  const { stats, stock } = res.data;
+  document.getElementById('hospName').textContent   = `${user.name}`;
+  document.getElementById('st-total').textContent   = stats.totalRequests;
+  document.getElementById('st-pending').textContent = stats.pending;
+  document.getElementById('st-approved').textContent= stats.approved;
+  renderStockGrid('stockGrid', stock);
+}
+
+async function loadMyRequests() {
+  const res = await api.get('/requests');
+  if (!res || !res.ok) return;
+
+  const tb = document.getElementById('myRequestsTable');
+  const requests = res.data.requests;
+  if (!requests.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No requests yet</td></tr>';
+    return;
+  }
+  tb.innerHTML = requests.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td>${bloodBadge(r.blood_group)}</td>
+      <td>${r.units}</td>
+      <td>${urgencyBadge(r.urgency)}</td>
+      <td>${r.notes || '—'}</td>
+      <td>${badgeHTML(r.status)}</td>
+      <td>${formatDate(r.created_at)}</td>
+    </tr>`).join('');
+}
+
+async function loadFullStock() {
+  const res = await api.get('/stock');
+  if (!res || !res.ok) return;
+  renderStockGrid('fullStockGrid', res.data.stock);
+}
+
+async function submitRequest() {
+  const bg      = document.getElementById('req-bg').value;
+  const units   = parseInt(document.getElementById('req-units').value);
+  const urgency = document.getElementById('req-urgency').value;
+  const notes   = document.getElementById('req-notes').value;
+
+  if (!bg || !units || units <= 0) {
+    return showAlert('alert-req', 'Blood group and valid units are required.', 'error');
+  }
+
+  setLoading('reqBtn', true);
+  const res = await api.post('/requests', { bloodGroup: bg, units, urgency, notes });
+  setLoading('reqBtn', false);
+
+  if (res && res.ok) {
+    showAlert('alert-req',
+      `Request submitted! Stock available for ${bg}: ${res.data.stockAvailable} units.`,
+      'success'
+    );
+    document.getElementById('req-bg').value      = '';
+    document.getElementById('req-units').value   = '';
+    document.getElementById('req-notes').value   = '';
+  } else {
+    showAlert('alert-req', res?.data?.message || 'Request failed.', 'error');
+  }
+}
+
+async function searchDonors() {
+  const bg  = document.getElementById('d-bg').value;
+  const loc = document.getElementById('d-loc').value;
+  const params = new URLSearchParams();
+  if (bg)  params.set('bloodGroup', bg);
+  if (loc) params.set('location', loc);
+
+  const res = await api.get(`/donors?${params}`);
+  if (!res || !res.ok) return;
+
+  const tb = document.getElementById('donorSearchTable');
+  const donors = res.data.donors;
+  if (!donors.length) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">No donors found</td></tr>';
+    return;
+  }
+  tb.innerHTML = donors.map(d => `
+    <tr>
+      <td>${d.name}</td>
+      <td>${bloodBadge(d.blood_group)}</td>
+      <td>${d.location}</td>
+      <td>${formatDate(d.last_donation)}</td>
+    </tr>`).join('');
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Donor Dashboard — BloodBank</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="drop"></div>
+    BloodBank &nbsp;<span style="color:var(--text-muted); font-weight:400;">Donor</span>
+  </div>
+  <div id="nav-user"></div>
+</nav>
+
+<div class="dashboard-layout">
+  <aside class="sidebar">
+    <div class="sidebar-label">My Account</div>
+    <div class="sidebar-section">
+      <div class="sidebar-link active" onclick="showSection('overview')">
+        <span class="icon">📊</span> Overview
+      </div>
+      <div class="sidebar-link" onclick="showSection('profile')">
+        <span class="icon">👤</span> My Profile
+      </div>
+      <div class="sidebar-link" onclick="showSection('history')">
+        <span class="icon">🩸</span> Donation History
+      </div>
+      <div class="sidebar-link" onclick="showSection('stock')">
+        <span class="icon">📦</span> Blood Availability
+      </div>
+    </div>
+    <div class="sidebar-label">Account</div>
+    <div class="sidebar-section">
+      <div class="sidebar-link" onclick="Auth.logout()">
+        <span class="icon">🚪</span> Logout
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ─── Overview ──────────────────────────────────── -->
+    <div id="sec-overview" class="fade-in">
+      <div class="page-header">
+        <h1>Welcome, <span id="donorName">—</span>!</h1>
+        <p>Your donation dashboard</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Total Donations</div>
+          <div class="value red" id="st-donations">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Units Donated</div>
+          <div class="value green" id="st-units">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Blood Group</div>
+          <div class="value" id="st-bg" style="font-size:1.5rem">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Last Donation</div>
+          <div class="value" id="st-last" style="font-size:1.2rem">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🩸 Current Blood Availability</div>
+        <div id="stockGrid" class="blood-grid"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ─── Profile ───────────────────────────────────── -->
+    <div id="sec-profile" class="fade-in hidden">
+      <div class="page-header">
+        <h1>My Profile</h1>
+        <p>Update your donor information</p>
+      </div>
+
+      <div id="alert-profile" class="alert"></div>
+
+      <div class="card" style="max-width:480px;">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input id="p-name" type="text" class="form-control" disabled/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="p-email" type="email" class="form-control" disabled/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Blood Group</label>
+            <select id="p-bg" class="form-control">
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input id="p-location" type="text" class="form-control"/>
+          </div>
+        </div>
+        <button id="updateBtn" class="btn btn-primary" data-label="Update Profile" onclick="updateProfile()">
+          Update Profile
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── Donation History ───────────────────────────── -->
+    <div id="sec-history" class="fade-in hidden">
+      <div class="page-header">
+        <h1>Donation History</h1>
+        <p>All your past donations</p>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Units</th><th>Notes</th><th>Date</th></tr>
+            </thead>
+            <tbody id="donationTable">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Blood Availability ────────────────────────── -->
+    <div id="sec-stock" class="fade-in hidden">
+      <div class="page-header">
+        <h1>Blood Availability</h1>
+        <p>Current units available across all blood groups</p>
+      </div>
+      <div class="card">
+        <div id="fullStockGrid" class="blood-grid"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+if (Auth.redirectIfNotLoggedIn()) throw new Error();
+const user = Auth.getUser();
+if (user.role !== 'donor') Auth.redirectByRole();
+setNavUser();
+
+let donorProfile = null;
+
+function showSection(name) {
+  document.querySelectorAll('[id^="sec-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById(`sec-${name}`).classList.remove('hidden');
+  document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  if (name === 'history') loadHistory();
+  if (name === 'stock')   loadFullStock();
+  if (name === 'profile') fillProfileForm();
+}
+
+async function loadDashboard() {
+  const res = await api.get('/dashboard/donor');
+  if (!res || !res.ok) return;
+
+  const { donor, stats, donations, stock } = res.data;
+  donorProfile = donor;
+
+  document.getElementById('donorName').textContent    = donor.name;
+  document.getElementById('st-donations').textContent = stats.totalDonations;
+  document.getElementById('st-units').textContent     = stats.totalUnitsDonated;
+  document.getElementById('st-bg').textContent        = donor.blood_group;
+  document.getElementById('st-last').textContent      = formatDate(donor.last_donation);
+
+  renderStockGrid('stockGrid', stock);
+}
+
+function renderStockGrid(elId, stock) {
+  const el = document.getElementById(elId);
+  if (!stock || !stock.length) { el.innerHTML = '<p style="color:var(--text-muted)">No data</p>'; return; }
+  el.innerHTML = stock.map(s => {
+    const cls = s.units_available === 0 ? 'critical' : s.units_available < 10 ? 'low' : '';
+    return `<div class="blood-item ${cls}">
+      <div class="bg-type">${s.blood_group}</div>
+      <div class="bg-units"><span>${s.units_available}</span> units</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadHistory() {
+  const res = await api.get('/dashboard/donor');
+  if (!res || !res.ok) return;
+  const tb = document.getElementById('donationTable');
+  const donations = res.data.donations;
+  if (!donations.length) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">No donations recorded yet</td></tr>';
+    return;
+  }
+  tb.innerHTML = donations.map(d => `
+    <tr>
+      <td>${d.id}</td>
+      <td>${d.units} unit${d.units > 1 ? 's' : ''}</td>
+      <td>${d.notes || '—'}</td>
+      <td>${formatDate(d.date)}</td>
+    </tr>`).join('');
+}
+
+async function loadFullStock() {
+  const res = await api.get('/stock');
+  if (!res || !res.ok) return;
+  renderStockGrid('fullStockGrid', res.data.stock);
+}
+
+function fillProfileForm() {
+  if (!donorProfile) return;
+  document.getElementById('p-name').value     = donorProfile.name;
+  document.getElementById('p-email').value    = donorProfile.email;
+  document.getElementById('p-bg').value       = donorProfile.blood_group;
+  document.getElementById('p-location').value = donorProfile.location;
+}
+
+async function updateProfile() {
+  if (!donorProfile) return;
+  const bg  = document.getElementById('p-bg').value;
+  const loc = document.getElementById('p-location').value.trim();
+
+  if (!bg || !loc) return showAlert('alert-profile', 'Blood group and location are required.', 'error');
+
+  setLoading('updateBtn', true);
+  const res = await api.put(`/donors/${donorProfile.id}`, {
+    bloodGroup: bg, location: loc, lastDonation: donorProfile.last_donation
+  });
+  setLoading('updateBtn', false);
+
+  if (res && res.ok) {
+    showAlert('alert-profile', 'Profile updated successfully!', 'success');
+    donorProfile.blood_group = bg;
+    donorProfile.location    = loc;
+  } else {
+    showAlert('alert-profile', res?.data?.message || 'Update failed.', 'error');
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
